@@ -1,5 +1,6 @@
 #include "postprocess.hpp"
 
+#include <vector>
 #include "common_struct.hpp"
 
 cv::Rect get_rect(cv::Mat& img, float bbox[4]) {
@@ -53,15 +54,15 @@ void topk(std::vector<Detection>& res_batch, float* output, int output_size,
 }
 
 //画框
-void draw_bbox(std::vector<cv::Mat>& img_batch, std::vector<Detection>& res_batch) {
-    for (size_t i = 0; i < img_batch.size(); i++) {
+void draw_bbox(cv::Mat& img_batch, std::vector<Detection>& res_batch) {
+
         auto& res = res_batch;
-        cv::Mat img = img_batch[i];
+        cv::Mat img = img_batch;
         for (size_t j = 0; j < res.size(); j++) {
             cv::Rect r = get_rect(img, res[j].bbox);
             cv::rectangle(img, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
             cv::putText(img, std::to_string((int)res[j].class_id), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2,
                         cv::Scalar(0xFF, 0xFF, 0xFF), 2);
         }
-    }
+    
 }

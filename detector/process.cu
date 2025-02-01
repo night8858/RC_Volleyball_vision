@@ -99,6 +99,14 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
     //    *pdst_c2 = 0.1;
 }
 
+/// @brief 
+/// @param src 
+/// @param src_width 
+/// @param src_height 
+/// @param dst 
+/// @param dst_width 
+/// @param dst_height 
+/// @param stream 
 void cuda_preprocess(uint8_t* src, int src_width, int src_height, float* dst, int dst_width, int dst_height,
                      cudaStream_t stream) 
                      {
@@ -145,3 +153,4 @@ void cuda_preprocess_init(int max_image_size) {
     // prepare input data in device memory
     CHECK(cudaMalloc((void**)&img_buffer_device, max_image_size * 3));
 }
+

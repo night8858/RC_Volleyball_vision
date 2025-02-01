@@ -86,7 +86,7 @@ std::vector<cv::Mat> imgsBatch_;
 
 int main()
 {
-    std::string engine_path = "/home/nvidia/RC_Volleyball_track_2025/detector/data/volley_v10.engine";
+    std::string engine_path = "/home/nvidia/RC_Volleyball_track_2025/detector/data/v10_fp16.engine";
     std::string path = "/home/nvidia/RC_Volleyball_track_2025/detector/data/20241017_1562.jpg";
     cv::Mat img = cv::imread(path);
     // std::vector<cv::Mat> img_batch;
@@ -96,21 +96,31 @@ int main()
     std::cout << "engine init success" << std::endl;
     // 读出输出和输入的tensor索引
     // target data
-    //std::cout << "inputIndex: " << outputIndex << std::endl;
+    // std::cout << "inputIndex: " << outputIndex << std::endl;
     // const int kOutputSize = kMaxNumOutputBbox * sizeof(Detection) / sizeof(float) + 1;
 
-    cuda_preprocess_init(640*640*3);
-    //img_batch.emplace_back(img);
-    //my_nx_detector.batch_copy(img);
-    //my_nx_detector.copy(img);
+    cuda_preprocess_init(640 * 640 * 3);
+    // img_batch.emplace_back(img);
+    // my_nx_detector.batch_copy(img);
+    // my_nx_detector.copy(img);
     my_nx_detector.preprocesss(img);
     std::cout << "preprocess success" << std::endl;
-
-    if(my_nx_detector.infer() == true)
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+    std::chrono::time_point<std::chrono::steady_clock> endTime;
+    while (1)
     {
-        std::cout << "infer success" << std::endl;
+        startTime = std::chrono::steady_clock::now();
+        if (my_nx_detector.infer() == true)
+        {
+            std::cout << "infer success" << std::endl;
+        }
+        endTime = std::chrono::steady_clock::now();
+
+        double timeTaken = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+        std::cout << timeTaken << std::endl;
     }
-    my_nx_detector.postprocess();
-    std::cout << "postprocess success" << std::endl;
+
+    // my_nx_detector.postprocess(img);
+    // std::cout << "postprocess success" << std::endl;
     return 0;
 }

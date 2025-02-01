@@ -30,24 +30,8 @@ detect_nx::detect_nx(void)
     context_ = nullptr;
     ////////// init cuda ///////////
 
-    // input_src_device = nullptr;
-    // input_resize_device = nullptr;
-    // input_rgb_device = nullptr;
-    // input_norm_device = nullptr;
-    // input_device = nullptr;
-
     int max_img_size = 3000000;
-    // CHECK(cudaMallocHost((void **)&input_src_host, 1280 * 720 * 3 * sizeof(unsigned char)));
-    // CHECK(cudaMalloc(&input_src_device, 3 * 640 * 480 * sizeof(unsigned char)));
-    // CHECK(cudaMalloc(&input_resize_device, 3 * 640 * 640 * sizeof(float)));
-    // CHECK(cudaMalloc(&input_rgb_device, 3 * 640 * 640 * sizeof(float)));
-    // CHECK(cudaMalloc(&input_norm_device, 3 * 640 * 640 * sizeof(float)));
-    //CHECK(cudaMalloc(&input_device, 3 * 640 * 640 * sizeof(float)));
 
-    // output_device = nullptr;
-    // output_src_transpose_device = nullptr;
-    // output_objects_device = nullptr;
-    // output_objects_host = nullptr;
     output_objects_width = 7;
     // output_idx_device = nullptr;
     // output_conf_device = nullptr;
@@ -155,11 +139,9 @@ void detect_nx::RT_engine_init(std::string engine_path)
 }
 
 
-
 void detect_nx::preprocesss(cv::Mat &imgsBatch)
 {
     cuda_batch_preprocess(imgsBatch ,device_buffers[0] ,640 ,640 ,stream_ );
-    
 }
 
 bool detect_nx::infer(void)
@@ -171,25 +153,36 @@ bool detect_nx::infer(void)
     return context;
 }
 
-void detect_nx::postprocess(void)
+void detect_nx::postprocess(cv::Mat &imgsBatch)
 {
     // CHECK(cudaMallocHost(&output_objects_host, 1 * (1 + 5 * 8400) * sizeof(float)));
     output_device_host = new float[1800];
 
     CHECK(cudaMemcpy(output_device_host, device_buffers[1], m_output_area * sizeof(float), cudaMemcpyDeviceToHost));
+    
+    topk( res, output_device_host, 1, 0.8 ,300);
 
-    for (size_t i = 0; i < 60; i++)
-    {
-        //  if (output_device_host[i * 6 + 4] > 0.6)
-        //  {
-        for (size_t j = 0; j < 6; j++)
-        {
+    draw_bbox(imgsBatch, res);
 
-            std::cout << output_device_host[i * 6 + j] << "  ";
-        }
-        std::cout << std::endl;
-        //}
-    }
+    // while (1)
+    // {
+    //     cv::imshow("1" , imgsBatch);
+    //     cv::waitKey(1);
+    // }
+    
+    // for (size_t i = 0; i < 60; i++)
+    // {
+    //     //  if (output_device_host[i * 6 + 4] > 0.6)
+    //     //  {
+    //     for (size_t j = 0; j < 6; j++)
+    //     {
+
+    //         std::cout << output_device_host[i * 6 + j] << "  ";
+    //     }
+    //     std::cout << std::endl;
+    //     //}
+    // }
+
 }
 
 // 现在要完成的是：

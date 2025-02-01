@@ -17,16 +17,17 @@ public:
 public:
     void RT_engine_init(std::string engine_path);
     // void batch_copy(cv::Mat &imgsBatch);
-    void copy(cv::Mat &imgsBatch);
     void preprocesss(cv::Mat &imgsBatch);
     bool infer(void);
-    void postprocess(void);
+    void postprocess(cv::Mat &imgsBatch);
 
 private:
     cv::Mat m_img_src;
     InitParameter m_param;
     AffineMat m_dst2src;
     
+    std::vector<Detection> res;
+
     nvinfer1::Dims m_output_dims;
     int m_output_area;
     int m_total_objects;

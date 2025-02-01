@@ -18,6 +18,7 @@ include_directories(/home/nvidia/RC_Volleyball_track_2025/detector/data)
 cuda_add_executable(gpu_detect_test main.cpp 
 /home/nvidia/RC_Volleyball_track_2025/detector/process.cu
 /home/nvidia/RC_Volleyball_track_2025/detector/detect.cpp
+/home/nvidia/RC_Volleyball_track_2025/detector/postprocess.cpp
 /usr/src/tensorrt/samples/common/logger.cpp
 )
 
