@@ -27,34 +27,7 @@ struct AffineMat
     float v3, v4, v5;
 };
 
-struct InitParameter
-{
-    int num_class{80}; // coco
-    std::vector<std::string> class_names;
-    std::vector<std::string> input_output_names;
 
-    bool dynamic_batch{true};
-    size_t batch_size;
-    int src_h, src_w;
-    int dst_h, dst_w;
-
-    float scale{255.f};
-    float means[3] = {0.f, 0.f, 0.f};
-    float stds[3] = {1.f, 1.f, 1.f};
-
-    float iou_thresh;
-    float conf_thresh;
-
-    int topK{300};
-    std::string save_path;
-
-    std::string winname = "TensorRT-Alpha";
-    int char_width = 11;
-    int det_info_render_width = 15;
-    double font_scale = 0.6;
-    bool is_show = false;
-    bool is_save = false;
-};
 
 struct alignas(float) Detection
 {
@@ -75,6 +48,17 @@ typedef struct
     int exposure;
 
 } s_camera_params;
+
+
+typedef struct 
+{
+    float center_x;
+    float center_y;
+    float deepth;
+
+    int id;
+
+}volleyball;
 
 
 typedef struct
