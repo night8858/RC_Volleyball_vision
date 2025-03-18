@@ -18,21 +18,21 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(/usr/include/aarch64-linux-gnu)
 include_directories(/usr/include/librealsense2)
 include_directories(/usr/include/opencv4)
-include_directories(/home/nvidia/RC_volleyball_vision/camera)
-include_directories(/home/nvidia/RC_volleyball_vision/detector)
-include_directories(/home/nvidia/RC_volleyball_vision/struct)
-include_directories(/home/nvidia/RC_volleyball_vision/detector)
-include_directories(/home/nvidia/RC_volleyball_vision/communicator)
-
+include_directories(/home/nvidia/RC_Volleyball_vision/camera)
+include_directories(/home/nvidia/RC_Volleyball_vision/detector)
+include_directories(/home/nvidia/RC_Volleyball_vision/struct)
+include_directories(/home/nvidia/RC_Volleyball_vision/communicator)
+include_directories(/opt/MVS/include)
 
 cuda_add_executable(volleyball_detect main.cpp 
-/home/nvidia/RC_volleyball_vision/camera/intel_realsence.cpp
-#/home/nvidia/RC_volleyball_vision/detector/nv_detect.cpp
-/home/nvidia/RC_volleyball_vision/detector/detect.cpp
-/home/nvidia/RC_volleyball_vision/detector/postprocess.cpp
+/home/nvidia/RC_Volleyball_vision/camera/intel_realsence.cpp
+/home/nvidia/RC_Volleyball_vision/camera/hikvision.cpp
+#/home/nvidia/RC_Volleyball_vision/detector/nv_detect.cpp
+/home/nvidia/RC_Volleyball_vision/detector/detect.cpp
+/home/nvidia/RC_Volleyball_vision/detector/postprocess.cpp
 /usr/src/tensorrt/samples/common/logger.cpp
-/home/nvidia/RC_volleyball_vision/detector/process.cu
-/home/nvidia/RC_volleyball_vision/communicator/my_serial.cpp
+/home/nvidia/RC_Volleyball_vision/detector/process.cu
+/home/nvidia/RC_Volleyball_vision/communicator/my_serial.cpp
 )
 
 target_link_libraries(volleyball_detect ${realsense2_LIBRARY} ${OpenCV_LIBS})
