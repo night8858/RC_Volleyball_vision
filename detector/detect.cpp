@@ -19,11 +19,6 @@ using namespace nvinfer1;
 detect_nx::detect_nx(void)
 {
     
-    m_param.batch_size= 1;
-    m_param.dst_h = 640;
-    m_param.dst_w = 640;
-    m_param.src_h = 480;
-    m_param.src_w = 640;
 
     runtime_ = nullptr;
     engine_ = nullptr;
@@ -33,36 +28,25 @@ detect_nx::detect_nx(void)
     int max_img_size = 3000000;
 
     output_objects_width = 7;
-    // output_idx_device = nullptr;
-    // output_conf_device = nullptr;
 
     int output_objects_size = 1 * (1 + 300 * output_objects_width); // 1: count
-    // CHECK(cudaMalloc(&output_objects_device, output_objects_size * sizeof(float)));
-    // CHECK(cudaMalloc(&output_idx_device, 1 * 300 * sizeof(int)));
-    // CHECK(cudaMalloc(&output_conf_device, 1 * 300 * sizeof(float)));
     output_objects_host = new float[output_objects_size];
 
-    /// CHECK(cudaStreamCreate(&stream_));
-
-    ////////////////////////////////
 }
 
-detect_nx::~detect_nx()
+detect_nx::~detect_nx(void)
+{}
+
+
+void detect_nx::push_img(cv::Mat& img)
 {
-    // // input
-    // CHECK(cudaFree(input_src_device));
-    // CHECK(cudaFree(input_resize_device));
-    // CHECK(cudaFree(input_rgb_device));
-    // CHECK(cudaFree(input_norm_device));
-    // CHECK(cudaFree(input_device));
-    // // output
-    // CHECK(cudaFree(output_device));
-    // CHECK(cudaFree(output_src_transpose_device));
-    // CHECK(cudaFree(output_objects_device));
-    // CHECK(cudaFree(output_idx_device));
-    // CHECK(cudaFree(output_conf_device));
-    // delete[] output_objects_host;
+    img_mutex_.lock();
+    if (input_imgs_.size() == max_size_) input_imgs_.clear();
+    input_imgs_.emplace_back(img);
+    img_mutex_.unlock();
 }
+
+
 
 void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float** input_buffer_device, float** output_buffer_device,
                     float** output_buffer_host) {
@@ -80,6 +64,9 @@ void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float** input
     *output_buffer_host = new float[6 * 300];
 }
 
+
+/// @brief 初始化tensorrt引擎，以及内存分配空间的准备
+/// @param engine_path 引擎路径
 void detect_nx::RT_engine_init(std::string engine_path)
 {
 
@@ -135,11 +122,13 @@ void detect_nx::RT_engine_init(std::string engine_path)
     prepare_buffer(engine_ , &device_buffers[0] , &device_buffers[1] , &output_device_host);
     CHECK(cudaStreamCreate(&stream_));
 
-
+    cuda_preprocess_init(640 * 640 * 3);
 }
 
 
-void detect_nx::preprocesss(cv::Mat &imgsBatch)
+/// @brief 输入图像预处理
+/// @param imgsBatch 输入图像（单张）
+void detect_nx::preprocess(cv::Mat &imgsBatch)
 {
     cuda_batch_preprocess(imgsBatch ,device_buffers[0] ,640 ,640 ,stream_ );
 }
@@ -153,38 +142,32 @@ bool detect_nx::infer(void)
     return context;
 }
 
+
 void detect_nx::postprocess(cv::Mat &imgsBatch)
 {
-    // CHECK(cudaMallocHost(&output_objects_host, 1 * (1 + 5 * 8400) * sizeof(float)));
+
     output_device_host = new float[1800];
 
     CHECK(cudaMemcpy(output_device_host, device_buffers[1], m_output_area * sizeof(float), cudaMemcpyDeviceToHost));
     
-    topk( res, output_device_host, 1, 0.8 ,300);
+    decode(det , &output_device_host[0] ,0.7 ,1);
+    //topk( res, output_device_host, 0, 0.8 ,100);
+    volley = get_ball(input_img_ , det);
+    //draw_bbox(imgsBatch, res);
 
-    draw_bbox(imgsBatch, res);
-
-    // while (1)
-    // {
-    //     cv::imshow("1" , imgsBatch);
-    //     cv::waitKey(1);
-    // }
-    
-    // for (size_t i = 0; i < 60; i++)
-    // {
-    //     //  if (output_device_host[i * 6 + 4] > 0.6)
-    //     //  {
-    //     for (size_t j = 0; j < 6; j++)
-    //     {
-
-    //         std::cout << output_device_host[i * 6 + j] << "  ";
-    //     }
-    //     std::cout << std::endl;
-    //     //}
-    // }
 
 }
 
-// 现在要完成的是：
-//
-// 1 解码函数输出和nms
+void detect_nx::show_result(cv::Mat &show_img)
+{
+    draw_bbox_single(show_img, det);
+    
+
+    std::cout << "X : " << volley.center_x 
+    << " Y : " << volley.center_y << std::endl;
+
+    std::cout << "deepth : " << volley.deepth << std::endl;
+    
+    cv::imshow("1" ,show_img);
+    cv::waitKey(1);
+}

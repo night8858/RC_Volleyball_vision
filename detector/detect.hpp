@@ -5,6 +5,8 @@
 #include <opencv2/core.hpp>
 #include <cuda_runtime.h>
 #include "NvInfer.h"
+#include <mutex>
+#include <vector>
 
 #include "common_struct.hpp"
 
@@ -14,18 +16,33 @@ public:
     detect_nx();
     ~detect_nx();
 
+    std::vector<cv::Mat> input_imgs_;
+    const int max_size_ = 10;
+    std::mutex img_mutex_;
+
+
+    void push_img(cv::Mat& img);
+    cv::Mat input_img_;
+
+    volleyball volley;         //存储排球数据
+
+
 public:
     void RT_engine_init(std::string engine_path);
     // void batch_copy(cv::Mat &imgsBatch);
-    void preprocesss(cv::Mat &imgsBatch);
+    void preprocess(cv::Mat &imgsBatch);
     bool infer(void);
     void postprocess(cv::Mat &imgsBatch);
 
+    void show_result(cv::Mat &show_img);
+
 private:
     cv::Mat m_img_src;
-    InitParameter m_param;
-    AffineMat m_dst2src;
     
+    AffineMat m_dst2src;       
+    
+    Detection det;
+
     std::vector<Detection> res;
 
     nvinfer1::Dims m_output_dims;

@@ -31,7 +31,7 @@ namespace toe
         serial_port(const char* port);
         ~serial_port();
 
-        bool write_port(const float& x, const float& y, const float& z, int id,int color,const float& angle);
+        bool write_port(const float& x, const float& y, const float& z, int id,int color);
         bool read_port(int& color, int& mode);
         int left_or_right_;
 

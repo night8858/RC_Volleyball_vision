@@ -6,7 +6,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(realsense2 REQUIRED)
-find_package(CUDA REQUIRED)0-
+find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-w -Ofast -DNDEBUG -flto -march=native")
@@ -18,21 +18,21 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(/usr/include/aarch64-linux-gnu)
 include_directories(/usr/include/librealsense2)
 include_directories(/usr/include/opencv4)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/camera)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/detector)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/struct)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/detector)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/communicator)
+include_directories(/home/nvidia/RC_volleyball_vision/camera)
+include_directories(/home/nvidia/RC_volleyball_vision/detector)
+include_directories(/home/nvidia/RC_volleyball_vision/struct)
+include_directories(/home/nvidia/RC_volleyball_vision/detector)
+include_directories(/home/nvidia/RC_volleyball_vision/communicator)
 
 
 cuda_add_executable(volleyball_detect main.cpp 
-/home/nvidia/RC_Volleyball_track_2025/camera/intel_realsence.cpp
-#/home/nvidia/RC_Volleyball_track_2025/detector/nv_detect.cpp
-/home/nvidia/RC_Volleyball_track_2025/detector/detect.cpp
-/home/nvidia/RC_Volleyball_track_2025/detector/parse_config.cpp
+/home/nvidia/RC_volleyball_vision/camera/intel_realsence.cpp
+#/home/nvidia/RC_volleyball_vision/detector/nv_detect.cpp
+/home/nvidia/RC_volleyball_vision/detector/detect.cpp
+/home/nvidia/RC_volleyball_vision/detector/postprocess.cpp
 /usr/src/tensorrt/samples/common/logger.cpp
-/home/nvidia/RC_Volleyball_track_2025/detector/detect.cu
-/home/nvidia/RC_Volleyball_track_2025/communicator/my_serial.h
+/home/nvidia/RC_volleyball_vision/detector/process.cu
+/home/nvidia/RC_volleyball_vision/communicator/my_serial.cpp
 )
 
 target_link_libraries(volleyball_detect ${realsense2_LIBRARY} ${OpenCV_LIBS})

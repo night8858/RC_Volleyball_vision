@@ -98,7 +98,7 @@ serial_port::~serial_port()
     // close(fd);
 }
 
-bool serial_port::write_port(const float& x, const float& y, const float& z, int id,int color,const float& angle)
+bool serial_port::write_port(const float& x, const float& y, const float& z, int id,int color)
 {
     //memset(send_temp,0,sizeof(send_temp));
 
@@ -119,13 +119,21 @@ bool serial_port::write_port(const float& x, const float& y, const float& z, int
     sbuff[10] = temp.bit[2];
     sbuff[11] = temp.bit[3];
     //std::cout << "x: " << x<< std::endl;
-    sbuff[12] = (uint8_t)id;
-    sbuff[13] = (uint8_t)color;
-    temp.data = angle;
-    sbuff[14] = temp.bit[0];
-    sbuff[15] = temp.bit[1];
-    sbuff[16] = temp.bit[2];
-    sbuff[17] = temp.bit[3];
+    // sbuff[12] = (uint8_t)id;
+    // sbuff[13] = (uint8_t)color;
+
+    // int sum_check = 0;
+
+    // for (int i = 0; i < 12; i++)
+    // {
+    //     sum_check += sbuff[i];
+    // }
+
+    // temp.data = sum_check;
+    // sbuff[14] = temp.bit[0];
+    // sbuff[15] = temp.bit[1];
+    // sbuff[16] = temp.bit[2];
+    // sbuff[17] = temp.bit[3];
     
     serial_fd.write_some(boost::asio::buffer(sbuff) ,m_ec);        
     //write(fd,send_temp,sizeof(send_temp));

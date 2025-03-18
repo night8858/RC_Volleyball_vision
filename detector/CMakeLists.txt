@@ -11,14 +11,14 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(/usr/include/aarch64-linux-gnu)
 include_directories(/usr/include/librealsense2)
 include_directories(/usr/include/opencv4)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/struct)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/detector)
-include_directories(/home/nvidia/RC_Volleyball_track_2025/detector/data)
+include_directories(/home/nvidia/RC_volleyball_vision/struct)
+include_directories(/home/nvidia/RC_volleyball_vision/detector)
+include_directories(/home/nvidia/RC_volleyball_vision/detector/data)
 
 cuda_add_executable(gpu_detect_test main.cpp 
-/home/nvidia/RC_Volleyball_track_2025/detector/process.cu
-/home/nvidia/RC_Volleyball_track_2025/detector/detect.cpp
-/home/nvidia/RC_Volleyball_track_2025/detector/postprocess.cpp
+/home/nvidia/RC_volleyball_vision/detector/process.cu
+/home/nvidia/RC_volleyball_vision/detector/detect.cpp
+/home/nvidia/RC_volleyball_vision/detector/postprocess.cpp
 /usr/src/tensorrt/samples/common/logger.cpp
 )
 

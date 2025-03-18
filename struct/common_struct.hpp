@@ -5,6 +5,11 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
+
+#define show 1
+
+
+
 #define CHECK(call)                                                           \
     do                                                                        \
     {                                                                         \
@@ -50,13 +55,13 @@ typedef struct
 } s_camera_params;
 
 
-typedef struct 
+typedef struct
 {
     float center_x;
     float center_y;
     float deepth;
 
-    int id;
+    int flag_detected;
 
 }volleyball;
 

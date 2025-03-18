@@ -99,7 +99,7 @@ int main()
     // std::cout << "inputIndex: " << outputIndex << std::endl;
     // const int kOutputSize = kMaxNumOutputBbox * sizeof(Detection) / sizeof(float) + 1;
 
-    cuda_preprocess_init(640 * 640 * 3);
+    // cuda_preprocess_init(640 * 640 * 3);
     // img_batch.emplace_back(img);
     // my_nx_detector.batch_copy(img);
     // my_nx_detector.copy(img);
@@ -107,20 +107,25 @@ int main()
     std::cout << "preprocess success" << std::endl;
     std::chrono::time_point<std::chrono::steady_clock> startTime;
     std::chrono::time_point<std::chrono::steady_clock> endTime;
-    while (1)
-    {
-        startTime = std::chrono::steady_clock::now();
+    // while (1)
+    // {
+    //     startTime = std::chrono::steady_clock::now();
         if (my_nx_detector.infer() == true)
         {
             std::cout << "infer success" << std::endl;
         }
-        endTime = std::chrono::steady_clock::now();
+    //     endTime = std::chrono::steady_clock::now();
 
-        double timeTaken = std::chrono::duration<double, std::milli>(endTime - startTime).count();
-        std::cout << timeTaken << std::endl;
+    //     double timeTaken = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+    //     std::cout << timeTaken << std::endl;
+    // }
+
+    my_nx_detector.postprocess(img);
+    std::cout << "postprocess success" << std::endl;
+    while(1)
+    {
+        cv::imshow("1" ,img);
+        cv::waitKey(1);
     }
-
-    // my_nx_detector.postprocess(img);
-    // std::cout << "postprocess success" << std::endl;
     return 0;
 }
