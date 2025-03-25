@@ -20,10 +20,10 @@ public:
     const int max_size_ = 10;
     std::mutex img_mutex_;
 
-
+    int hik_img_flag;   //hik相机图像标志位
+    int usb_img_flag;   //usb相机图像标志位
     void push_img(cv::Mat& img);
     cv::Mat input_img_;
-
     volleyball volley;         //存储排球数据
 
 
@@ -33,7 +33,6 @@ public:
     void preprocess(cv::Mat &imgsBatch);
     bool infer(void);
     void postprocess(cv::Mat &imgsBatch);
-
     void show_result(cv::Mat &show_img);
 
 private:

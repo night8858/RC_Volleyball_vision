@@ -46,32 +46,67 @@ void detect_nx::push_img(cv::Mat& img)
     img_mutex_.unlock();
 }
 
-
-
-void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float** input_buffer_device, float** output_buffer_device,
-                    float** output_buffer_host) {
+/**
+ * @brief 为 TensorRT 推理准备输入输出缓冲区
+ * @param engine TensorRT 引擎指针
+ * @param input_buffer_device 设备端输入缓冲区指针的指针
+ * @param output_buffer_device 设备端输出缓冲区指针的指针
+ * @param output_buffer_host 主机端输出缓冲区指针的指针
+ *
+ * 该函数分配用于推理的 GPU 和 CPU 内存缓冲区。
+ * 输入缓冲区大小为 1x3x640x640 的浮点数组。
+ * 输出缓冲区大小为 6x300 的浮点数组。
+ * 函数会验证引擎绑定点数量及输入输出 tensor 的正确性。
+ */
+void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float **input_buffer_device, float **output_buffer_device,
+                    float **output_buffer_host)
+{
     assert(engine->getNbBindings() == 2);
-    // In order to bind the buffers, we need to know the names of the input and output tensors.
-    // Note that indices are guaranteed to be less than IEngine::getNbBindings()
+
+    //这里是获取输入输出tensor的索引
     const int inputIndex = engine->getBindingIndex("images");
     const int outputIndex = engine->getBindingIndex("output0");
     assert(inputIndex == 0);
     assert(outputIndex == 1);
     // Create GPU buffers on device
-    CUDA_CHECK(cudaMalloc((void**)input_buffer_device, 1 * 3 * 640 * 640 * sizeof(float)));
-    CUDA_CHECK(cudaMalloc((void**)output_buffer_device, 6 * 300 * sizeof(float)));
+    if(1)
+    {
+        CUDA_CHECK(cudaMalloc((void**)input_buffer_device, 1 * 3 * 640 * 640 * sizeof(float)));
+        CUDA_CHECK(cudaMalloc((void**)output_buffer_device, 6 * 300 * sizeof(float)));
+    
+        *output_buffer_host = new float[6 * 300];
+    }
 
-    *output_buffer_host = new float[6 * 300];
+    if(0)
+    {
+        //改为推理两个图片
+        CUDA_CHECK(cudaMalloc((void**)input_buffer_device, 2 * 3 * 640 * 640 * sizeof(float)));
+        CUDA_CHECK(cudaMalloc((void**)output_buffer_device, 2 * 6 * 300 * sizeof(float)));
+    
+        *output_buffer_host = new float[2 * 6 * 300];
+    }
 }
 
+/**
+ * @brief 初始化用于目标检测的TensorRT推理引擎
+ * @param engine_path 序列化的TensorRT引擎文件路径
+ *
+ * 本函数执行以下初始化步骤：
+ * 1. 从文件加载序列化的推理引擎
+ * 2. 创建TensorRT运行时并反序列化引擎
+ * 3. 创建用于推理的执行上下文
+ * 4. 设置输出维度及缓冲区大小
+ * 5. 初始化CUDA内存缓冲区和推理流
+ *
+ * @throws 当无法打开引擎文件时抛出断言错误
+ * @note 需要CUDA和TensorRT运行时环境
+ */
 
-/// @brief 初始化tensorrt引擎，以及内存分配空间的准备
-/// @param engine_path 引擎路径
 void detect_nx::RT_engine_init(std::string engine_path)
 {
-
+    // 初始化
     std::ifstream engine_file(engine_path, std::ios::binary);
-    // std::cout << engine_path << std::endl;//打印引擎路径（个人理解---night）
+    //打印引擎路径（个人理解---night）
     assert(engine_file.is_open() && "Unable to load engine_ file.");
     engine_file.seekg(0, engine_file.end);
     int length = engine_file.tellg();
@@ -79,7 +114,7 @@ void detect_nx::RT_engine_init(std::string engine_path)
     engine_file.seekg(0, engine_file.beg);
     engine_file.read(reinterpret_cast<char *>(engine_data_.data()), length);
 
-
+    //创建runtime
     runtime_ = std::unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(sample::gLogger.getTRTLogger()));
     if (!runtime_)
     {
@@ -88,7 +123,7 @@ void detect_nx::RT_engine_init(std::string engine_path)
     }
 
     auto plan = engine_data_;
-
+    //创建引擎
     engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(plan.data(), plan.size()));
     if (!engine_)
     {
@@ -117,20 +152,32 @@ void detect_nx::RT_engine_init(std::string engine_path)
     std::cout << m_output_area << std::endl;
     detect_nx();
 
-    // Create GPU buffers on device
+    // 创建GPU和CPU内存
 
     prepare_buffer(engine_ , &device_buffers[0] , &device_buffers[1] , &output_device_host);
     CHECK(cudaStreamCreate(&stream_));
 
-    cuda_preprocess_init(640 * 640 * 3);
+    cuda_preprocess_init(1440 * 1080 * 3);//分配处理的最大的空间
 }
-
 
 /// @brief 输入图像预处理
 /// @param imgsBatch 输入图像（单张）
 void detect_nx::preprocess(cv::Mat &imgsBatch)
 {
-    cuda_batch_preprocess(imgsBatch ,device_buffers[0] ,640 ,640 ,stream_ );
+    if(1)
+    {
+        //处理单路数据
+        cuda_batch_preprocess(imgsBatch ,device_buffers[0] ,640 ,640 ,stream_ );
+
+    }
+
+    if(0)
+    {
+        //处理两路数据,一路hik
+        cuda_batch_preprocess(imgsBatch ,device_buffers[0] ,640 ,640 ,stream_ );
+        cuda_batch_preprocess(imgsBatch ,device_buffers[0] + 640 * 640 * 3 ,640 ,640 ,stream_ );
+
+    }
 }
 
 bool detect_nx::infer(void)
@@ -146,11 +193,11 @@ bool detect_nx::infer(void)
 void detect_nx::postprocess(cv::Mat &imgsBatch)
 {
 
-    output_device_host = new float[1800];
+    output_device_host = new float[6 * 300 * 2];
 
     CHECK(cudaMemcpy(output_device_host, device_buffers[1], m_output_area * sizeof(float), cudaMemcpyDeviceToHost));
     
-    decode(det , &output_device_host[0] ,0.7 ,1);
+    decode(det , &output_device_host[0] ,0.8 ,1);
     //topk( res, output_device_host, 0, 0.8 ,100);
     volley = get_ball(input_img_ , det);
     //draw_bbox(imgsBatch, res);
@@ -162,7 +209,6 @@ void detect_nx::show_result(cv::Mat &show_img)
 {
     draw_bbox_single(show_img, det);
     
-
     std::cout << "X : " << volley.center_x 
     << " Y : " << volley.center_y << std::endl;
 

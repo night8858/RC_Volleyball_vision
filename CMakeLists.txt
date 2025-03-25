@@ -24,9 +24,11 @@ include_directories(/home/nvidia/RC_Volleyball_vision/struct)
 include_directories(/home/nvidia/RC_Volleyball_vision/communicator)
 include_directories(/opt/MVS/include)
 
+link_directories(/opt/MVS/lib/aarch64)
 cuda_add_executable(volleyball_detect main.cpp 
 /home/nvidia/RC_Volleyball_vision/camera/intel_realsence.cpp
 /home/nvidia/RC_Volleyball_vision/camera/hikvision.cpp
+/home/nvidia/RC_Volleyball_vision/camera/usbcam.cpp
 #/home/nvidia/RC_Volleyball_vision/detector/nv_detect.cpp
 /home/nvidia/RC_Volleyball_vision/detector/detect.cpp
 /home/nvidia/RC_Volleyball_vision/detector/postprocess.cpp
@@ -42,3 +44,4 @@ target_link_libraries(volleyball_detect ${OpenCV_LIBS})
 target_link_libraries(volleyball_detect nvinfer)
 target_link_libraries(volleyball_detect nvparsers)
 target_link_libraries(volleyball_detect nvonnxparser jsoncpp)
+target_link_libraries(volleyball_detect MvCameraControl ${OpenCV_LIBS})

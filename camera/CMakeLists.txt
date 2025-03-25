@@ -13,5 +13,5 @@ include_directories(../)
 include_directories(/home/nvidia/RC_Volleyball_vision/struct)
 
 link_directories(/opt/MVS/lib/aarch64)
-add_executable(grab_test grab_test.cpp hikvision.cpp)
+add_executable(grab_test grab_test.cpp hikvision.cpp usbcam.cpp)
 target_link_libraries(grab_test MvCameraControl ${OpenCV_LIBS})

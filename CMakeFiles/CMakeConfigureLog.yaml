@@ -9,3 +9,14 @@ events:
     message: |
       The system is: Linux - 5.10.104-tegra - aarch64
 ...
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/local/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:233 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Linux - 5.10.104-tegra - aarch64
+...
