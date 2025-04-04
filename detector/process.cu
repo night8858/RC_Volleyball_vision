@@ -9,12 +9,12 @@
 #include "process.h"
 #include "common_struct.hpp"
 
-
 static uint8_t* img_buffer_host = nullptr;
 static uint8_t* img_buffer_device = nullptr;
 
-__global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width, int src_height, float* dst,
-                                  int dst_width, int dst_height, uint8_t const_value_st, AffineMatrix d2s, int edge) {
+__global__ void warpaffine_kernel(uint8_t *src, int src_line_size, int src_width, int src_height, float *dst,
+                                  int dst_width, int dst_height, uint8_t const_value_st, AffineMatrix d2s, int edge)
+{
     int position = blockDim.x * blockIdx.x + threadIdx.x;
     if (position >= edge)
         return;
@@ -32,12 +32,15 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
     float src_y = m_x2 * dx + m_y2 * dy + m_z2 + 0.5f;
     float c0, c1, c2;
 
-    if (src_x <= -1 || src_x >= src_width || src_y <= -1 || src_y >= src_height) {
+    if (src_x <= -1 || src_x >= src_width || src_y <= -1 || src_y >= src_height)
+    {
         // out of range
         c0 = const_value_st;
         c1 = const_value_st;
         c2 = const_value_st;
-    } else {
+    }
+    else
+    {
         int y_low = floorf(src_y);
         int x_low = floorf(src_x);
         int y_high = y_low + 1;
@@ -49,12 +52,13 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
         float hy = 1 - ly;
         float hx = 1 - lx;
         float w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
-        uint8_t* v1 = const_value;
-        uint8_t* v2 = const_value;
-        uint8_t* v3 = const_value;
-        uint8_t* v4 = const_value;
+        uint8_t *v1 = const_value;
+        uint8_t *v2 = const_value;
+        uint8_t *v3 = const_value;
+        uint8_t *v4 = const_value;
 
-        if (y_low >= 0) {
+        if (y_low >= 0)
+        {
             if (x_low >= 0)
                 v1 = src + y_low * src_line_size + x_low * 3;
 
@@ -62,7 +66,8 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
                 v2 = src + y_low * src_line_size + x_high * 3;
         }
 
-        if (y_high < src_height) {
+        if (y_high < src_height)
+        {
             if (x_low >= 0)
                 v3 = src + y_high * src_line_size + x_low * 3;
 
@@ -87,9 +92,9 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
 
     // rgbrgbrgb to rrrgggbbb
     int area = dst_width * dst_height;
-    float* pdst_c0 = dst + dy * dst_width + dx;
-    float* pdst_c1 = pdst_c0 + area;
-    float* pdst_c2 = pdst_c1 + area;
+    float *pdst_c0 = dst + dy * dst_width + dx;
+    float *pdst_c1 = pdst_c0 + area;
+    float *pdst_c2 = pdst_c1 + area;
 
     *pdst_c0 = c0;
     *pdst_c1 = c1;
@@ -99,22 +104,23 @@ __global__ void warpaffine_kernel(uint8_t* src, int src_line_size, int src_width
     //    *pdst_c2 = 0.1;
 }
 
-/// @brief 
-/// @param src 
-/// @param src_width 
-/// @param src_height 
-/// @param dst 
-/// @param dst_width 
-/// @param dst_height 
-/// @param stream 
-void cuda_preprocess(uint8_t* src, int src_width, int src_height, float* dst, int dst_width, int dst_height,
-                     cudaStream_t stream) 
-                     {
+/// @brief
+/// @param src
+/// @param src_width
+/// @param src_height
+/// @param dst
+/// @param dst_width
+/// @param dst_height
+/// @param stream
+void cuda_preprocess(uint8_t *src, int src_width, int src_height, float *dst, int dst_width, int dst_height,
+                     cudaStream_t stream)
+{
     int img_size = src_width * src_height * 3;
     // copy data to pinned memory
     memcpy(img_buffer_host, src, img_size);
     // copy data to device memory
     CHECK(cudaMemcpyAsync(img_buffer_device, img_buffer_host, img_size, cudaMemcpyHostToDevice, stream));
+    CHECK(cudaStreamSynchronize(stream));
 
     AffineMatrix s2d, d2s;
     float scale = std::min(dst_height / (float)src_height, dst_width / (float)src_width);
@@ -136,21 +142,22 @@ void cuda_preprocess(uint8_t* src, int src_width, int src_height, float* dst, in
     int blocks = ceil(jobs / (float)threads);
     warpaffine_kernel<<<blocks, threads, 0, stream>>>(img_buffer_device, src_width * 3, src_width, src_height, dst,
                                                       dst_width, dst_height, 128, d2s, jobs);
+    CHECK(cudaStreamSynchronize(stream));
 }
 
-void cuda_batch_preprocess(cv::Mat img_batch, float* dst, int dst_width, int dst_height,
-                           cudaStream_t stream) 
+void cuda_batch_preprocess(cv::Mat img_batch,  float *dst, int dst_width, int dst_height,
+                           cudaStream_t stream)
 {
     int dst_size = dst_width * dst_height * 3;
-        cuda_preprocess(img_batch.ptr(), img_batch.cols, img_batch.rows, dst, dst_width,
-                        dst_height, stream);
-        CHECK(cudaStreamSynchronize(stream));
+
+    cuda_preprocess(img_batch.ptr(), img_batch.cols, img_batch.rows, &dst[0], dst_width,
+                    dst_height, stream);
+    CHECK(cudaStreamSynchronize(stream));
 }
 
 void cuda_preprocess_init(int max_image_size) {
     // prepare input data in pinned memory
-    CHECK(cudaMallocHost((void**)&img_buffer_host, max_image_size * 3));
+    CHECK(cudaMallocHost((void**)&img_buffer_host, max_image_size * 3 * sizeof(uchar)));
     // prepare input data in device memory
-    CHECK(cudaMalloc((void**)&img_buffer_device, max_image_size * 3));
+    CHECK(cudaMalloc((void**)&img_buffer_device, max_image_size * 3 * sizeof(uchar)));
 }
-

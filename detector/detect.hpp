@@ -16,33 +16,55 @@ public:
     detect_nx();
     ~detect_nx();
 
-    std::vector<cv::Mat> input_imgs_;
     const int max_size_ = 10;
+
+    std::vector<cv::Mat> input_imgs_;
+    std::vector<cv::Mat> input_cam1_imgs_;
+    std::vector<cv::Mat> input_cam2_imgs_;
+
+    
     std::mutex img_mutex_;
+    std::mutex img_cam1_mutex_;
+    std::mutex img_cam2_mutex_;
 
-    int hik_img_flag;   //hik相机图像标志位
-    int usb_img_flag;   //usb相机图像标志位
-    void push_img(cv::Mat& img);
+    int hik_img_flag; // hik相机图像标志位
+    int usb_img_flag; // usb相机图像标志位
+
     cv::Mat input_img_;
-    volleyball volley;         //存储排球数据
+    cv::Mat input_cam1_img_;
+    cv::Mat input_cam2_img_;
 
+    cv::Mat show_img_;
+    cv::Mat show_cam1_img_;
+    cv::Mat show_cam2_img_;
+
+    volleyball volley;      // 存储排球数据
+    volleyball volley_cam1; // 存储排球数据
+    volleyball volley_cam2; // 存储排球数据
+
+    void push_img(cv::Mat &img ,  int cam_id);
 
 public:
     void RT_engine_init(std::string engine_path);
-    // void batch_copy(cv::Mat &imgsBatch);
-    void preprocess(cv::Mat &imgsBatch);
+    void preprocess(void);
     bool infer(void);
-    void postprocess(cv::Mat &imgsBatch);
-    void show_result(cv::Mat &show_img);
+    void postprocess(void);
+    void show_result(cv::Mat &show_img , Detection &det);
 
 private:
+
+    int flag = 2;    //用来判断单路推理双路推理
+
     cv::Mat m_img_src;
-    
-    AffineMat m_dst2src;       
-    
+    AffineMat m_dst2src;
+
     Detection det;
+    Detection det1;
+    Detection det2;
 
     std::vector<Detection> res;
+    std::vector<Detection> res1;
+    std::vector<Detection> res2;
 
     nvinfer1::Dims m_output_dims;
     int m_output_area;
@@ -61,15 +83,19 @@ private:
     // input
     float *input_host;
 
-    float* device_buffers[2];
+    float *device_buffers[2];          //存储输入输出的数据
     // output
     float *output_device_host;
 
+    uint8_t *img_buffer_host_1;
+    uint8_t *img_buffer_device_1;
+
+    uint8_t *img_buffer_host_2;
+    uint8_t *img_buffer_device_2;
+
+
     float *output_device;
-    float *output_src_transpose_device;
     float *output_objects_device;
     float *output_objects_host;
-    int output_objects_width;
-    int *output_idx_device;
-    float *output_conf_device;
+
 };

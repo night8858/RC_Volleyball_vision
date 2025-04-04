@@ -7,7 +7,8 @@
 #include <cuda_runtime.h>
 #include "common_struct.hpp"
 
-struct AffineMatrix {
+struct AffineMatrix
+{
     float value[6];
 };
 
@@ -27,11 +28,10 @@ struct AffineMatrix {
 // __global__ void hwc2chw_device_kernel(float *src, float *dst,
 //                                       int batch_size, int img_height, int img_width, int img_area, int img_volume);
 
-void cuda_preprocess_init(int max_image_size);
+ void cuda_preprocess_init(int max_image_size);
 
-void cuda_batch_preprocess(cv::Mat img_batch, float* dst, int dst_width, int dst_height,
-                           cudaStream_t stream) ;
-
-
+void cuda_batch_preprocess(cv::Mat img_batch,
+                           float *dst, int dst_width, int dst_height,
+                           cudaStream_t stream);
 
 #endif // ___PREPROCESS_CUH___
