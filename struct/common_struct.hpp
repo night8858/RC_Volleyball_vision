@@ -6,7 +6,7 @@
 #include <iostream>
 
 
-#define show 1
+#define show 0
 
 
 
@@ -63,7 +63,7 @@ typedef struct
     
     float deepth;
 
-    int flag_detected;
+    int isValid;
 
 }volleyball;
 

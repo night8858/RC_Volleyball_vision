@@ -155,6 +155,20 @@ void cuda_batch_preprocess(cv::Mat img_batch,  float *dst, int dst_width, int ds
     CHECK(cudaStreamSynchronize(stream));
 }
 
+void cuda_2batch_preprocess(cv::Mat img_batch1, cv::Mat img_batch2, float *dst, int dst_width, int dst_height,
+    cudaStream_t stream)
+{
+int dst_size = dst_width * dst_height * 3;
+
+cuda_preprocess(img_batch1.ptr(), img_batch1.cols, img_batch1.rows, &dst[0], dst_width,
+dst_height, stream);
+CHECK(cudaStreamSynchronize(stream));
+
+cuda_preprocess(img_batch2.ptr(), img_batch2.cols, img_batch2.rows, &dst[dst_size], dst_width,
+dst_height, stream);
+CHECK(cudaStreamSynchronize(stream));
+}
+
 void cuda_preprocess_init(int max_image_size) {
     // prepare input data in pinned memory
     CHECK(cudaMallocHost((void**)&img_buffer_host, max_image_size * 3 * sizeof(uchar)));

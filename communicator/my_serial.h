@@ -30,8 +30,8 @@ namespace toe
     public:
         serial_port(const char* port);
         ~serial_port();
-
-        bool write_port(const float& x, const float& y, const float& z, int id,int color);
+        bool write_port(const float& x1, const float& y1, const float& z1,
+            const float& x2, const float& y2, const float& z2 );
         bool read_port(int& color, int& mode);
         int left_or_right_;
 
@@ -48,7 +48,7 @@ namespace toe
         boost::system::error_code m_ec;
         // 接收发送缓冲区
         uint8_t rbuff[1024];
-        uint8_t sbuff[29];
+        uint8_t sbuff[24];
         //记录的模式信息
         // int mode = DEFALUTE_MODE;
         // //记录的颜色信息

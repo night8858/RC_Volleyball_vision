@@ -15,6 +15,8 @@
 #include "postprocess.hpp"
 
 using namespace nvinfer1;
+// 全局或类成员变量
+BallTracker ballTracker;
 
 detect_nx::detect_nx(void)
 {
@@ -25,7 +27,6 @@ detect_nx::detect_nx(void)
     ////////// init cuda ///////////
 
     int max_img_size = 3000000;
-
 
     int output_objects_size = 1 * (1 + 300 * 6); // 1: count
     output_objects_host = new float[output_objects_size];
@@ -52,9 +53,9 @@ void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float **input
 {
     assert(engine->getNbBindings() == 2);
 
-    const int kOutputSize = 300 * sizeof(Detection) / sizeof(float) ;
+    const int kOutputSize = 300 * sizeof(Detection) / sizeof(float);
 
-    int batch_size = 1;
+    int batch_size = 2;
     // 这里是获取输入输出tensor的索引
     const int inputIndex = engine->getBindingIndex("images");
     const int outputIndex = engine->getBindingIndex("output0");
@@ -63,16 +64,15 @@ void prepare_buffer(std::shared_ptr<nvinfer1::ICudaEngine> engine, float **input
     // Create GPU buffers on device
     // if (1)
     // {
-        CUDA_CHECK(cudaMalloc((void **)input_buffer_device, batch_size * 3 * 640 * 640 * sizeof(float)));
-        CUDA_CHECK(cudaMalloc((void **)output_buffer_device, batch_size * kOutputSize * sizeof(float)));
+    CUDA_CHECK(cudaMalloc((void **)input_buffer_device, batch_size * 3 * 640 * 640 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc((void **)output_buffer_device, batch_size * kOutputSize * sizeof(float)));
 
-        *output_buffer_host = new float[kOutputSize * batch_size ];
+    *output_buffer_host = new float[kOutputSize * batch_size];
     // }
 
     // if (1)
     // {
     //     // 改为推理两个图片
-
 
     //     CUDA_CHECK(cudaMalloc((void **)input_buffer_device, 2 * 3 * 640 * 640 * sizeof(float)));
     //     CUDA_CHECK(cudaMalloc((void **)output_buffer_device, 2 * 6 * 300 * sizeof(float)));
@@ -105,7 +105,8 @@ void detect_nx::RT_engine_init(std::string engine_path)
     assert(engine_file.is_open() && "Unable to load engine_ file.");
     engine_file.seekg(0, engine_file.end);
     int length = engine_file.tellg();
-    if (length <= 0) {
+    if (length <= 0)
+    {
         std::cerr << "Error: Invalid engine file size (" << length << ")" << std::endl;
         exit(-1);
     }
@@ -136,13 +137,12 @@ void detect_nx::RT_engine_init(std::string engine_path)
         exit(-1);
     }
 
-     nvinfer1::Dims output_dims = engine_->getBindingDimensions(0);
-    for(int i = 0; i < output_dims.nbDims; i++)
+    nvinfer1::Dims output_dims = engine_->getBindingDimensions(0);
+    for (int i = 0; i < output_dims.nbDims; i++)
     {
-        std::cout<< i << "   "  <<output_dims.d[i] << std::endl;
-
+        std::cout << i << "   " << output_dims.d[i] << std::endl;
     }
-    
+
     // context_->setBindingDimensions(0, Dims4(2, 3, 640, 640));
     // nvinfer1::Dims output_dims = context_->getBindingDimensions(0);
     // m_output_dims = this->context_->getBindingDimensions(1);
@@ -158,13 +158,12 @@ void detect_nx::RT_engine_init(std::string engine_path)
     //     }
     // }
     // std::cout << m_output_area << std::endl;
-    
+
     // 创建GPU和CPU内存
     prepare_buffer(engine_, &device_buffers[0], &device_buffers[1], &output_device_host);
     CHECK(cudaStreamCreate(&stream_));
-    
-  cuda_preprocess_init(1440 * 1080 * 3); // 分配处理的最大的空间
 
+    cuda_preprocess_init(1440 * 1080 * 3); // 分配处理的最大的空间
 }
 
 void detect_nx::push_img(cv::Mat &img, int cam_id)
@@ -174,7 +173,7 @@ void detect_nx::push_img(cv::Mat &img, int cam_id)
     //     input_imgs_.clear();
     // input_imgs_.emplace_back(img);
     // img_mutex_.unlock();
-    if(flag == 1)
+    if (flag == 1)
     {
         if (cam_id == 0)
         {
@@ -195,7 +194,6 @@ void detect_nx::push_img(cv::Mat &img, int cam_id)
         input_cam2_img_ = img.clone();
         img_cam2_mutex_.unlock();
     }
-
 }
 
 /// @brief 输入图像预处理
@@ -209,10 +207,10 @@ void detect_nx::preprocess(void)
             show_img_ = input_img_.clone();
         }
         // 处理单路数据
-        //cuda_batch_preprocess(input_img_, device_buffers[0], 640, 640, stream_);
+        // cuda_batch_preprocess(input_img_, device_buffers[0], 640, 640, stream_);
     }
 
-    if (flag ==2)
+    if (flag == 2)
     {
         if (show)
         {
@@ -221,11 +219,11 @@ void detect_nx::preprocess(void)
         }
 
         // 处理两路数据
-        cuda_batch_preprocess(input_cam1_img_,  device_buffers[0], 640, 640, stream_);
-        // cuda_batch_preprocess(input_cam2_img_,  device_buffers[0] + 640 * 640 * 3 * sizeof(float), 640, 640, stream_);
+        // cuda_batch_preprocess(input_cam1_img_,  device_buffers[0], 640, 640, stream_);
+        cuda_2batch_preprocess(input_cam1_img_, input_cam2_img_, device_buffers[0], 640, 640, stream_);
 
-        //CHECK(cudaStreamSynchronize(stream_));
-        //cuda_batch_preprocess(input_cam2_img_,img_buffer_host_2, img_buffer_device_2 , device_buffers[0] + 640 * 640 * 3 *sizeof(float), 640, 640, stream_);
+        // CHECK(cudaStreamSynchronize(stream_));
+        // cuda_batch_preprocess(input_cam2_img_,img_buffer_host_2, img_buffer_device_2 , device_buffers[0] + 640 * 640 * 3 *sizeof(float), 640, 640, stream_);
         CHECK(cudaStreamSynchronize(stream_));
     }
 }
@@ -242,8 +240,8 @@ bool detect_nx::infer(void)
 void detect_nx::postprocess(void)
 {
 
-    output_device_host = new float[ 6 * 300 ];
-    CHECK(cudaMemcpy(output_device_host, device_buffers[1], 1800 * sizeof(float), cudaMemcpyDeviceToHost));
+    output_device_host = new float[2 * 6 * 300];
+    CHECK(cudaMemcpy(output_device_host, device_buffers[1], 2 * 1800 * sizeof(float), cudaMemcpyDeviceToHost));
     // for (int i = 0; i < 7; i++)
     // {
     //     std::cout <<  output_device_host[i];
@@ -254,7 +252,7 @@ void detect_nx::postprocess(void)
     //     std::cout <<  output_device_host[i];
     // }
     // std::cout<<std::endl;
-    
+
     if (flag == 1)
     {
         decode(det, &output_device_host[0], 0.6, 1);
@@ -263,10 +261,10 @@ void detect_nx::postprocess(void)
         // draw_bbox(imgsBatch, res);
         if (show)
         {
-            detect_nx::show_result(show_img_, det);
-            std::cout << "X : " << volley.center_x
-                      << "Y : " << volley.center_y << std::endl;
-            std::cout << "deepth : " << volley.deepth << std::endl;
+            // detect_nx::show_result(show_img_, det);
+            // std::cout << "X : " << volley.center_x
+            //           << "Y : " << volley.center_y << std::endl;
+            // std::cout << "deepth : " << volley.deepth << std::endl;
 
             cv::imshow("1", show_img_);
             cv::waitKey(1);
@@ -276,47 +274,66 @@ void detect_nx::postprocess(void)
     if (flag == 2)
     {
 
-        decode(det, &output_device_host[0], 0.6, 1);
-        
+        decode(det1, &output_device_host[0], 0.6, 1);
+        decode2(det2, &output_device_host[0], 0.6, 1);
+
         // topk( res, output_device_host, 0, 0.8 ,100);
-        volley = get_ball(input_cam1_img_, det);
+        volley_cam1 = get_ball(input_cam1_img_, det1);
+        volley_cam2 = get_ball(input_cam2_img_, det2);
+
+        // 在检测循环中调用
+        // volley_cam1 = get_ball(input_cam1_img_, det1); // 原始检测
+        // if (volley_cam1.isValid)
+        // { // 假设返回结构包含有效性标志
+        //     cv::Point2f filteredPos = ballTracker.update(cv::Point2f(volley_cam1.x, volley_cam1.y));
+        //     volley_cam1.x = filteredPos.x;
+        //     volley_cam1.y = filteredPos.y;
+        // }
+        // else
+        // {
+        //     // 若未检测到球，使用预测值（可选）
+        //     cv::Mat prediction = ballTracker.KF.predict();
+        //     volley_cam1.x = prediction.at<float>(0);
+        //     volley_cam1.y = prediction.at<float>(1);
+        // }
+
+        volley_cam1.deepth = 1 / (volley_cam1.radius) * 340;
+        volley_cam2.deepth = 1 / (volley_cam2.radius) * 41.6;
         // draw_bbox(imgsBatch, res);
+        std::cout << "X1 : " << volley_cam1.center_x << "   "
+                  << "Y1 : " << volley_cam1.center_y << "   "
+                  << "deepth1 : " << volley_cam1.deepth << std::endl;
+
+        std::cout << "X2 : " << volley_cam2.center_x << "   "
+                  << "Y2 : " << volley_cam2.center_y << "   "
+                  << "deepth : " << volley_cam2.deepth << std::endl;
+
+        // std::cout << "D1 : " << volley_cam1.deepth  << "   "
+        //           << "D2 : " << volley_cam2.deepth << std::endl;
+
         if (show)
         {
-            detect_nx::show_result(show_cam1_img_, det);
-            std::cout << "X : " << volley.center_x
-                      << "Y : " << volley.center_y << std::endl;
-            std::cout << "deepth : " << volley.deepth << std::endl;
+            detect_nx::show_result(show_cam1_img_, det1);
+            detect_nx::show_result(show_cam2_img_, det2);
+
+            std::cout << "X1 : " << volley_cam1.center_x << "   "
+                      << "Y1 : " << volley_cam1.center_y << "   "
+                      << "deepth1 : " << volley_cam1.deepth << std::endl;
+
+            std::cout << "X2 : " << volley_cam2.center_x << "   "
+                      << "Y2 : " << volley_cam2.center_y << "   "
+                      << "deepth : " << volley_cam2.deepth << std::endl;
 
             cv::imshow("1", show_cam1_img_);
+            cv::imshow("2", show_cam2_img_);
+
             cv::waitKey(1);
         }
-        // double_decode(det1, det2, &output_device_host[0], 0.8, 1);
-        // // topk( res, output_device_host, 0, 0.8 ,100);
-        // volley_cam1 = get_ball(input_cam1_img_, det1);
-        // volley_cam2 = get_ball(input_cam2_img_, det2);
-        // // draw_bbox(imgsBatch, res);
-        // if (show)
-        // {
-        //     detect_nx::show_result(show_cam1_img_, det1);
-        //     detect_nx::show_result(show_cam2_img_, det2);
 
-        //     // std::cout << "X1 : " << volley_cam1.center_x  << "  "
-        //     //           << "Y1 : " << volley_cam1.center_y  << "  "
-        //     //           << "deepth1 : " << volley_cam1.deepth << std::endl;
-
-        //     // std::cout << "X2 : " << volley_cam2.center_x  << "  "
-        //     //           << "Y2 : " << volley_cam2.center_y  << "  "
-        //     //           << "deepth : " << volley_cam2.deepth << std::endl;
-
-        //     cv::imshow("1", show_cam1_img_);
-        //     cv::imshow("2", show_cam2_img_);
-        //     cv::waitKey(1);
-        // }
     }
 }
 
-void detect_nx::show_result(cv::Mat &show_img , Detection &det)
+void detect_nx::show_result(cv::Mat &show_img, Detection &det)
 {
     draw_bbox_single(show_img, det);
 }

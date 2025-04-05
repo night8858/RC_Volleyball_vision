@@ -62,21 +62,55 @@ cv::Rect get_rect(cv::Mat &img, float bbox[4])
  */
 void decode(Detection &res, float *output, float conf_thresh, int tokp)
 {
+    // 初始化res为全零
+    memset(&res, 0, sizeof(Detection));
+    
     int det_size = sizeof(Detection) / sizeof(float);
+    bool has_valid_detection = false;
+
     for (int i = 0; i < tokp; i++)
     {
-        // 置信度处理
-        if (output[det_size * i + 4] <= conf_thresh)
+        // 检查置信度是否超过阈值
+        if (output[det_size * i + 4] > conf_thresh)
         {
-            
-            continue;
+            // 复制有效检测数据到res
+            memcpy(&res, &output[det_size * i], det_size * sizeof(float));
+            has_valid_detection = true;
+            break;  // 找到第一个有效检测后即可退出循环
         }
-        Detection det{};
-        // 复制数据到res
-        memcpy(&res, &output[det_size * i], det_size * sizeof(float));
     }
+
+    // 如果没有有效检测，确保res保持全零状态
+    if (!has_valid_detection)
+    {
+        memset(&res, 0, sizeof(Detection));
+    }
+    
 }
 
+void decode2(Detection &res, float *output, float conf_thresh, int tokp)
+{
+    memset(&res, 0, sizeof(Detection));
+    
+    int det_size = sizeof(Detection) / sizeof(float);
+    bool has_valid_detection = false;
+
+    for (int i = 0; i < tokp; i++)
+    {
+        if (output[1800 + det_size * i + 4] > conf_thresh)
+        {
+            // 复制有效检测数据到res
+            memcpy(&res, &output[1800 + det_size * i], det_size * sizeof(float));
+            has_valid_detection = true;
+            break;  // 找到第一个有效检测后即可退出循环
+        }
+    }
+        // 如果没有有效检测，确保res保持全零状态
+        if (!has_valid_detection)
+        {
+            memset(&res, 0, sizeof(Detection));
+        }
+}
 /**
  * @brief 解码两个检测结果的函数
  * @param res1 第一个检测结果的引用
@@ -134,8 +168,15 @@ volleyball get_ball(cv::Mat &getted_frame, Detection &volley)
     cv::Rect ball = get_rect(getted_frame, volley.bbox);
     temp.center_x = ball.x;
     temp.center_y = ball.y;
-    temp.radius = std::min(ball.width, ball.height) / 2;
-    temp.deepth = temp.radius * 0.04;
+    temp.radius = std::max(ball.width, ball.height) / 2 ;
+///    temp.deepth = temp.radius * 0.04;
+    if(ball.x == 0 || ball.y == 0)
+    {
+        temp.isValid = false;
+    }else
+    {
+        temp.isValid = true;
+    }
     return temp;
 }
 

@@ -5,7 +5,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(realsense2 REQUIRED)
+# find_package(realsense2 REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -37,11 +37,10 @@ cuda_add_executable(volleyball_detect main.cpp
 /home/nvidia/RC_Volleyball_vision/communicator/my_serial.cpp
 )
 
-target_link_libraries(volleyball_detect ${realsense2_LIBRARY} ${OpenCV_LIBS})
-#target_link_libraries(volleyball_detect /usr/lib/aarch64-linux-gnu)
+# target_link_libraries(volleyball_detect ${realsense2_LIBRARY} ${OpenCV_LIBS})
+target_link_libraries(volleyball_detect /usr/lib/aarch64-linux-gnu)
 target_link_libraries(volleyball_detect ${CUDA_LIBRARIES})
 target_link_libraries(volleyball_detect ${OpenCV_LIBS})
 target_link_libraries(volleyball_detect nvinfer)
 target_link_libraries(volleyball_detect nvparsers)
-target_link_libraries(volleyball_detect nvonnxparser jsoncpp)
-target_link_libraries(volleyball_detect MvCameraControl ${OpenCV_LIBS})
+target_link_libraries(volleyball_detect nvonnxparser jsoncpp MvCameraControl)

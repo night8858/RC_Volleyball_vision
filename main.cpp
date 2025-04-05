@@ -63,6 +63,8 @@ cv::Mat show_frame;
 cv::Mat show_frame_hik;
 cv::Mat show_frame_usb;
 
+int infer_flag = 0;
+
 enum E_CAMERA_RESULT
 {
     NO_IMAGE = 0,
@@ -103,8 +105,14 @@ void serial_process()
         // msg.push_back(ball_posion.Deep);
         // std::cout << "串口线程" << std::endl;
         // serial.send_msg(msg);
-        serial.write_port(detector.volley.center_x, detector.volley.center_y, detector.volley.deepth, 1, 1);
-    }
+        if( infer_flag == 1)
+        {
+            serial.write_port(detector.volley_cam1.center_x, detector.volley_cam1.center_y, detector.volley_cam1.deepth,
+                              detector.volley_cam2.center_x, detector.volley_cam2.center_y, detector.volley_cam2.deepth);
+            infer_flag = 0;
+        }else
+        { usleep(10);}
+   }
 }
 
 // 处理线程
@@ -124,15 +132,30 @@ void serial_process()
  */
 void detect_process(void)
 {
+    std::vector<double> msg;
+    // serial.init_port(config);
     int k = 0;
-    std::string engine_path = "/home/nvidia/RC_Volleyball_vision/detector/data/403_batch.engine";
+    std::string engine_path = "/home/nvidia/RC_Volleyball_vision/detector/data/403_2batch.engine";
     detector.RT_engine_init(engine_path);
 
-    const int num_frames_to_test = 100;                          // 测试100帧以计算平均FPS
-    auto start_time = std::chrono::high_resolution_clock::now(); // 记录开始时间
-
+    // const int num_frames_to_test = 100;                          // 测试100帧以计算平均FPS
+    // auto start_time = std::chrono::high_resolution_clock::now(); // 记录开始时间
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    float elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    int fps;
     while (state.load())
     {
+        end =  std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        
+        if (elapsed/1000 > 1000)
+        {
+            std::cout << fps << std::endl;
+            start = end;
+            fps = 0;
+        }
+        // cout << nv_detector.left << " " << nv_detector.right << endl;
          if (detector.usb_img_flag && detector.hik_img_flag)
         {
             if (E_CAMERA_RESULT::CAMERA_ERROR == detector.usb_img_flag)
@@ -142,11 +165,12 @@ void detect_process(void)
                 sleep(1);
                 continue;
             }
-
+            
+            fps++;
             // 括号不能删，这是锁的生命周期
             detector.hik_img_flag = E_CAMERA_RESULT::NO_IMAGE;
             detector.usb_img_flag = E_CAMERA_RESULT::NO_IMAGE;
-            // detector.input_img_ = frame_usb.clone();
+            // detector.input_img_ = frame_usb.clone(); 
             // show_frame = detector.input_img_.clone();
             //detector.push_img(frame_usb, 0);
             detector.push_img(frame_hik, 1);
@@ -156,14 +180,13 @@ void detect_process(void)
             detector.infer();
             detector.postprocess();
 
-            // if(detector.volley.flag_detected = 1)
-            // {
-            // detector.volley.deepth =
-            // RS_camera.RS_get_depth_data((int)detector.volley.center_x , (int)detector.volley.center_y);
+            infer_flag = 1;
+            // auto end = std::chrono::high_resolution_clock::now();
+            // float elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            // //cout << "pre: " << elapsed/1000 << endl;
 
-            // }
-            auto end_time = std::chrono::high_resolution_clock::now();          // 记录结束时间
-            std::chrono::duration<double> elapsed_time = end_time - start_time; // 计算时间差
+            // auto end_time = std::chrono::high_resolution_clock::now();          // 记录结束时间
+            // std::chrono::duration<double> elapsed_time = end_time - start_time; // 计算时间差
         }
 
 
@@ -183,62 +206,7 @@ void detect_process(void)
 // 所以对于使用该api的海康相机只要初始化就是异步的，不需要这个线程，初始化可以在主线程做，使用这个api是为了以后能够更方便的切换为硬触发，不需要修改代码
 // 但是对于usb相机和realsence都需要手动由用户触发，不支持这种模式，所以需要保留这个线程以备手动触发获取图像
 
-/**
- * @brief 获取相机图像的线程函数
- *
- * 初始化并启动 RealSense 相机，持续获取彩色图像帧。
- * 在全局状态变量 state 为 true 时循环运行，通过互斥锁保护帧数据的读写。
- * 函数结束时自动销毁所有 OpenCV 窗口。
- *
- * 注: 包含被注释掉的海康相机相关代码
- */
-// void grab_img(void)
-// {
 
-//     int hik_id = 0;
-//     hik_cam.Hik_init();
-//     hik_cam.Hik_end();
-//     sleep(2);
-//     hik_cam.Hik_init();
-//     // 初始化相机
-//     // if(!RS_camera.RS_init())
-//     // {
-//     //     std::cerr << "Failed to initialize camera!" << std::endl;
-//     //     return;
-//     // }
-
-//     while (state.load())
-//     {
-//         if (E_CAMERA_RESULT::SUCCESS == detector.hik_img_flag)
-//         {
-//             usleep(10);
-//             continue;
-//         }
-//         if (hik_cam.get_one_frame(frame, 0))
-//         {
-//             detector.hik_img_flag = E_CAMERA_RESULT::SUCCESS;
-//         }
-//         // RS_camera.RS_get_frames();
-//         // detector.img_mutex_.lock();
-//         // hik_cam.get_one_frame(frame , 0);
-//         // detector.img_mutex_.unlock();
-//     }
-
-//     cv::destroyAllWindows(); // 销毁窗口
-
-//     // int device_num = 0;
-//     // hik_cam.hik_init(config, device_num);
-//     //// 重启一次防止不正常退出后启动异常
-//     // hik_cam.hik_end();
-//     // std::this_thread::sleep_for(std::chrono::seconds(1));
-//     // hik_cam.hik_init(config, device_num);
-//     // while (state.load())
-//     //{
-//     //     // 手动触发获取图像
-//     //     sleep(5);
-//     // }
-//     hik_cam.Hik_end();
-// }
 
 void grab_img_hikcam(void)
 {

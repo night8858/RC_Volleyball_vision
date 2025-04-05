@@ -98,26 +98,42 @@ serial_port::~serial_port()
     // close(fd);
 }
 
-bool serial_port::write_port(const float& x, const float& y, const float& z, int id,int color)
+bool serial_port::write_port(const float& x1, const float& y1, const float& z1,
+                             const float& x2, const float& y2, const float& z2 )
 {
     //memset(send_temp,0,sizeof(send_temp));
 
     acm_data temp;
-    temp.data = x;
+    temp.data = x1;
     sbuff[0] = temp.bit[0];
     sbuff[1] = temp.bit[1];
     sbuff[2] = temp.bit[2];
     sbuff[3] = temp.bit[3];
-    temp.data = y;
+    temp.data = y1;
     sbuff[4] = temp.bit[0];
     sbuff[5] = temp.bit[1];
     sbuff[6] = temp.bit[2];
     sbuff[7] = temp.bit[3];
-    temp.data = z;
+    temp.data = z1;
     sbuff[8] = temp.bit[0];
     sbuff[9] = temp.bit[1];
     sbuff[10] = temp.bit[2];
     sbuff[11] = temp.bit[3];
+    temp.data = x2;
+    sbuff[12] = temp.bit[0];
+    sbuff[13] = temp.bit[1];
+    sbuff[14] = temp.bit[2];
+    sbuff[15] = temp.bit[3];
+    temp.data = y2;
+    sbuff[16] = temp.bit[0];
+    sbuff[17] = temp.bit[1];
+    sbuff[18] = temp.bit[2];
+    sbuff[19] = temp.bit[3];
+    temp.data = z2;
+    sbuff[20] = temp.bit[0];
+    sbuff[21] = temp.bit[1];
+    sbuff[22] = temp.bit[2];
+    sbuff[23] = temp.bit[3];
     //std::cout << "x: " << x<< std::endl;
     // sbuff[12] = (uint8_t)id;
     // sbuff[13] = (uint8_t)color;

@@ -9,6 +9,61 @@
 #include <vector>
 
 #include "common_struct.hpp"
+#include <opencv2/video/tracking.hpp>
+
+class BallTracker {
+private:
+    cv::KalmanFilter KF;
+    cv::Mat measurement;
+    bool isInitialized = false;
+
+public:
+    BallTracker() {
+        // 状态维度：4 (x, y, vx, vy)，测量维度：2 (x, y)
+        KF.init(4, 2, 0);
+        
+        // 转移矩阵 (假设匀速运动模型)
+        KF.transitionMatrix = (cv::Mat_<float>(4, 4) << 
+            1, 0, 1, 0,
+            0, 1, 0, 1,
+            0, 0, 1, 0,
+            0, 0, 0, 1);
+
+        // 测量矩阵 (只能观测x,y)
+        cv::setIdentity(KF.measurementMatrix);
+
+        // 过程噪声协方差 (调节参数Q)
+        cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-2));
+
+        // 测量噪声协方差 (调节参数R)
+        cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(1e-1));
+
+        // 后验误差协方差初始化
+        cv::setIdentity(KF.errorCovPost, cv::Scalar::all(1));
+
+        measurement = cv::Mat::zeros(2, 1, CV_32F);
+    }
+
+    cv::Point2f update(cv::Point2f detectedPoint) {
+        if (!isInitialized) {
+            KF.statePost.at<float>(0) = detectedPoint.x;
+            KF.statePost.at<float>(1) = detectedPoint.y;
+            isInitialized = true;
+        }
+
+        // 预测阶段
+        cv::Mat prediction = KF.predict();
+
+        // 更新阶段
+        measurement.at<float>(0) = detectedPoint.x;
+        measurement.at<float>(1) = detectedPoint.y;
+        KF.correct(measurement);
+
+        return cv::Point2f(prediction.at<float>(0), prediction.at<float>(1));
+    }
+};
+
+
 
 class detect_nx
 {
